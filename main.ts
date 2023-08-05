@@ -53,7 +53,7 @@ for await (const item of itemList) {
   const link = item.links[0].href || '';
 
   // 投稿予定のテキストを作成
-  const text = `${title}\n${link}`;
+  const text = title;
 
   // URLからOGPの取得
   const getOgp = async (
@@ -89,6 +89,7 @@ for await (const item of itemList) {
 
       // 画像が取得できなかった場合は空オブジェクトを返す
       if (!response.ok || !contentType?.includes('image')) {
+        console.log('image not found');
         continue;
       }
 
@@ -117,6 +118,7 @@ for await (const item of itemList) {
 
         images.push({ image: resizedImage, type });
       } catch {
+        console.log('image decode error');
         continue;
       }
     }
@@ -129,6 +131,7 @@ for await (const item of itemList) {
   await rt.detectFacets(agent);
   if (rt.text.length > 300) {
     // 300文字以上は投稿しない
+    console.log('text too long');
     continue;
   }
 
