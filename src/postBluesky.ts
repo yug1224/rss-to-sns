@@ -11,36 +11,43 @@ export default async ({
   images,
 }: {
   rt: RichText;
-  images: {
+  images?: {
     mimeType: string;
     image: Uint8Array;
   }[];
 }) => {
-  const uploadedImages = [];
-  for await (const { mimeType, image } of images) {
-    // 画像をアップロード
-    const uploadedImage = await agent.uploadBlob(image, {
-      encoding: mimeType,
-    });
+  const embed = await (async () => {
+    // 画像がない場合はreturn
+    if (!images) return;
 
-    uploadedImages.push({
-      image: {
-        cid: uploadedImage.data.blob.ref.toString(),
-        mimeType: uploadedImage.data.blob.mimeType,
-      },
-      alt: '',
-    });
-  }
+    const uploadedImages = [];
+    for await (const { mimeType, image } of images) {
+      // 画像をアップロード
+      const uploadedImage = await agent.uploadBlob(image, {
+        encoding: mimeType,
+      });
+
+      uploadedImages.push({
+        image: {
+          cid: uploadedImage.data.blob.ref.toString(),
+          mimeType: uploadedImage.data.blob.mimeType,
+        },
+        alt: '',
+      });
+    }
+
+    return {
+      $type: 'app.bsky.embed.images',
+      images: uploadedImages,
+    };
+  })();
 
   const postObj: Partial<AtprotoAPI.AppBskyFeedPost.Record> &
     Omit<AtprotoAPI.AppBskyFeedPost.Record, 'createdAt'> = {
     $type: 'app.bsky.feed.post',
     text: rt.text,
     facets: rt.facets,
-    embed: {
-      $type: 'app.bsky.embed.images',
-      images: uploadedImages,
-    },
+    embed,
   };
 
   console.log(JSON.stringify(postObj, null, 2));

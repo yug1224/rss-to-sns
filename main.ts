@@ -31,14 +31,13 @@ for await (const item of itemList) {
   const og = await getOgp(link);
 
   // 画像のリサイズ
-  const images = [];
-
+  let images;
   for (const ogImage of og.ogImage || []) {
     const { mimeType, resizedImage } = await resizeImage(
       new URL(ogImage.url, link).href
     );
     if (mimeType && resizedImage)
-      images.push({ mimeType, image: resizedImage });
+      images = [...(images || []), { mimeType, image: resizedImage }];
   }
 
   // Blueskyに投稿

@@ -30,7 +30,7 @@ export default async (item: FeedEntry) => {
           ? link
           : splitter.splitGraphemes(link).slice(0, 27).join('') + '...';
       text = text.replace(link, key);
-      targets.push({ key, link });
+      targets = [...targets, { key, link }];
     }
   });
 
@@ -53,7 +53,8 @@ export default async (item: FeedEntry) => {
   rt.facets?.forEach((v, i) => {
     if (
       v.features[0]['$type'] === 'app.bsky.richtext.facet#link' &&
-      typeof v.features[0].uri === 'string'
+      typeof v.features[0].uri === 'string' &&
+      targets[i]?.link
     ) {
       v.features[0].uri = targets[i].link;
     }
