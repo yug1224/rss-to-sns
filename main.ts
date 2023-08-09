@@ -33,7 +33,7 @@ for await (const item of itemList) {
   // 画像のリサイズ
   const images = [];
 
-  for (const ogImage of og.ogImage) {
+  for (const ogImage of og.ogImage || []) {
     const { mimeType, resizedImage } = await resizeImage(
       new URL(ogImage.url, link).href
     );
