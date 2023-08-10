@@ -1,4 +1,4 @@
-import AtprotoAPI, { RichText } from 'npm:@atproto/api';
+import AtprotoAPI from 'npm:@atproto/api';
 const { BskyAgent } = AtprotoAPI;
 const service = 'https://bsky.social';
 const agent = new BskyAgent({ service });
@@ -7,10 +7,12 @@ const password = Deno.env.get('BLUESKY_PASSWORD') || '';
 await agent.login({ identifier, password });
 
 export default async ({
-  rt,
+  text,
+  facets,
   images,
 }: {
-  rt: RichText;
+  text: string;
+  facets?: AtprotoAPI.AppBskyRichtextFacet.Main[];
   images?: {
     mimeType: string;
     image: Uint8Array;
@@ -45,8 +47,8 @@ export default async ({
   const postObj: Partial<AtprotoAPI.AppBskyFeedPost.Record> &
     Omit<AtprotoAPI.AppBskyFeedPost.Record, 'createdAt'> = {
     $type: 'app.bsky.feed.post',
-    text: rt.text,
-    facets: rt.facets,
+    text,
+    facets,
     embed,
   };
 

@@ -36,14 +36,16 @@ export default async (item: FeedEntry) => {
 
   // 300文字を超える場合は、300文字になるように切り詰める
   const max = 300;
-  if (splitter.countGraphemes(text) > max) {
-    const ellipsis = `...`;
+  const isOverLength = splitter.countGraphemes(text) > max;
+  const shortenedLink =
+    splitter.countGraphemes(link) <= 27
+      ? link
+      : splitter.splitGraphemes(link).slice(0, 27).join('') + '...';
+  if (isOverLength) {
+    const ellipsis = `...\n\n${shortenedLink}`;
     const cnt = max - splitter.countGraphemes(ellipsis);
-    const shortenedTitle = splitter
-      .splitGraphemes(title)
-      .slice(0, cnt)
-      .join('');
-    text = `${shortenedTitle}${ellipsis}`;
+    const shortenedText = splitter.splitGraphemes(text).slice(0, cnt).join('');
+    text = `${shortenedText}${ellipsis}`;
   }
 
   rt = new RichText({ text });
@@ -56,10 +58,14 @@ export default async (item: FeedEntry) => {
       typeof v.features[0].uri === 'string' &&
       targets[i]?.link
     ) {
-      v.features[0].uri = targets[i].link;
+      // 文字数超過の場合は、最後のリンクは元URLになるはず
+      v.features[0].uri =
+        isOverLength && rt.facets && i === rt.facets.length - 1
+          ? link
+          : targets[i].link;
     }
   });
 
   console.log('success createProperties');
-  return { rt, title, link };
+  return { text: rt.text, facets: rt.facets, title, link };
 };

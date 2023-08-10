@@ -25,7 +25,7 @@ for await (const item of itemList) {
   await Deno.writeTextFile('.timestamp', timestamp);
 
   // 投稿記事のプロパティを作成
-  const { rt, link } = await createProperties(item);
+  const { text, facets, link } = await createProperties(item);
 
   // URLからOGPの取得
   const og = await getOgp(link);
@@ -42,7 +42,8 @@ for await (const item of itemList) {
 
   // Blueskyに投稿
   await postBluesky({
-    rt,
+    text,
+    facets,
     images,
   });
 }
