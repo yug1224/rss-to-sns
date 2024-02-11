@@ -1,3 +1,3 @@
-# technews-to-sns
+# rss-to-sns
 
-IT系記事とインターネットミームを見つけたらBluesky・Xに投稿する
+RSSの更新を検知したらSNSに投稿する

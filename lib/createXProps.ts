@@ -3,6 +3,7 @@ import defaultsGraphemer from 'npm:graphemer';
 const Graphemer = defaultsGraphemer.default;
 const splitter = new Graphemer();
 
+// deno-lint-ignore require-await
 export default async (item: FeedEntry) => {
   const title: string = (item.title?.value || '').trim();
   const link: string = item.links[0].href || '';

@@ -1,11 +1,11 @@
-name: Technews to SNS
+name: RSS to SNS
 on:
   schedule:
     # 15分ごとに実行
     - cron: '*/15 * * * *'
   workflow_dispatch:
 jobs:
-  technews-to-sns:
+  rss-to-sns:
     runs-on: macos-latest
     # 15分以上かかったらタイムアウト
     timeout-minutes: 15
@@ -69,14 +69,14 @@ jobs:
           WEBHOOK_URL: ${{secrets.WEBHOOK_URL}}
       # Cacheの保存
       - name: Save Last Execution Time Cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         if: ${{always()}}
         with:
           path: |
             .timestamp
           key: last-execution-time-${{github.run_id}}
       - name: Save itemlist Cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         if: ${{always()}}
         with:
           path: |
