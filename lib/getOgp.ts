@@ -1,5 +1,6 @@
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts';
 import ogs from 'npm:open-graph-scraper';
+import { extractText } from 'npm:unpdf';
 
 export default async (url: string) => {
   try {
@@ -14,6 +15,15 @@ export default async (url: string) => {
     }
 
     const arrayBuffer = await response.arrayBuffer();
+
+    // content-typeがpdfの場合は最初の文字列（おそらくタイトル）を抽出して返す
+    if (response.headers.get('content-type')?.includes('pdf')) {
+      const text = (await extractText(arrayBuffer)).text[0].replace(/\n/g, '');
+      return {
+        ogTitle: text,
+      };
+    }
+
     let html = new TextDecoder().decode(arrayBuffer);
     let doc = new DOMParser().parseFromString(html, 'text/html');
 
