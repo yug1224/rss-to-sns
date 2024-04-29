@@ -20,21 +20,21 @@ jobs:
           deno-version: v1.x
       # Cacheの復元
       - name: Cache Deno Deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.deno
             ~/.cache/deno
           key: ${{ hashFiles('deno.lock') }}
       - name: Restore Last Execution Time Cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             .timestamp
           key: last-execution-time
           restore-keys: last-execution-time-
       - name: Restore itemlist Cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             .itemList.json
@@ -42,12 +42,12 @@ jobs:
           restore-keys: item-list-
       - name: Check timestamp file exists
         id: check_timestamp
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: .timestamp
       - name: Check itemlist file exists
         id: check_itemlist
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: .itemList.json
       # 環境変数を設定
