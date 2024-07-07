@@ -21,10 +21,10 @@ try {
     Deno.exit(0);
   }
 
-  // UTC:16-23時の間は終了（JST:8-25時の間のみ実行）
+  // UTC:01-15時の間のみ実行（JST:10-24時の間のみ実行）
   const nowHour = new Date().getUTCHours();
-  if (nowHour >= 16 && nowHour < 23) {
-    console.log('now hour is over 16');
+  if (!(nowHour >= 1 && nowHour < 15)) {
+    console.log(`${nowHour}:00 is not target time`);
     Deno.exit(0);
   }
 
