@@ -3,6 +3,8 @@ import { delay } from 'https://deno.land/std@0.201.0/async/mod.ts';
 import AtprotoAPI from 'npm:@atproto/api';
 import createBlueskyProps from './lib/createBlueskyProps.ts';
 import createXProps from './lib/createXProps.ts';
+import createPDF from './lib/createPDF.ts';
+import createSummary from './lib/createSummary.ts';
 import getItemList from './lib/getItemList.ts';
 import getOgp from './lib/getOgp.ts';
 import postBluesky from './lib/postBluesky.ts';
@@ -73,6 +75,12 @@ try {
     // URLからOGPの取得
     const og = await getOgp(item.links[0].href || '');
 
+    // WebページをPDF化
+    await createPDF(item.links[0].href);
+
+    // Gemini APIで要約
+    const summary = await createSummary();
+
     // 投稿記事のプロパティを作成
     const tmpItem = {
       ...item,
@@ -84,6 +92,7 @@ try {
     const { bskyText, title, link, description } = await createBlueskyProps(
       agent,
       tmpItem,
+      summary,
     );
     const { xText } = await createXProps(tmpItem);
 

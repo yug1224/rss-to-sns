@@ -15,9 +15,9 @@ jobs:
         uses: actions/checkout@v4
       # Denoのセットアップ
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.x
+          deno-version: v2.x
       # Cacheの復元
       - name: Cache Deno Deps
         uses: actions/cache@v4
@@ -61,12 +61,13 @@ jobs:
           echo "[]" > .itemList.json
       # Denoの実行
       - name: Deno Run
-        run: deno run --allow-read --allow-write --allow-env --allow-net --allow-ffi main.ts
+        run: deno run --allow-read --allow-write --allow-env --allow-net --allow-ffi --allow-run main.ts
         env:
           BLUESKY_IDENTIFIER: ${{secrets.BLUESKY_IDENTIFIER}}
           BLUESKY_PASSWORD: ${{secrets.BLUESKY_PASSWORD}}
           RSS_URL: ${{secrets.RSS_URL}}
           WEBHOOK_URL: ${{secrets.WEBHOOK_URL}}
+          GOOGLE_AI_API_KEY: ${{secrets.GOOGLE_AI_API_KEY}}
       # Cacheの保存
       - name: Save Last Execution Time Cache
         uses: actions/cache/save@v4

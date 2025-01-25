@@ -6,14 +6,14 @@ const splitter = new Graphemer();
 import AtprotoAPI, { BskyAgent } from 'npm:@atproto/api';
 const { RichText } = AtprotoAPI;
 
-export default async (agent: BskyAgent, item: FeedEntry) => {
+export default async (agent: BskyAgent, item: FeedEntry, summary: string) => {
   const title: string = (item.title?.value || '').trim();
   const description: string = (item.description?.value || '').trim();
   const link: string = item.links[0].href || '';
 
   // Bluesky用のテキストを作成
   const bskyText = await (async () => {
-    const max = 300;
+    const max = 100;
     const { host, pathname } = new URL(link);
     const ellipsis = `...`;
     const key = splitter.splitGraphemes(`${host}${pathname}`).slice(0, 19).join('') + ellipsis;
@@ -27,6 +27,8 @@ export default async (agent: BskyAgent, item: FeedEntry) => {
         .join('');
       text = `${key}\n${shortenedTitle}${ellipsis}`;
     }
+
+    text = `${text}\n\n${summary}`;
 
     const rt = new RichText({ text });
     await rt.detectFacets(agent);
