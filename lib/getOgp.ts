@@ -1,4 +1,4 @@
-import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts';
+import { DOMParser } from 'jsr:@b-fuze/deno-dom';
 import ogs from 'npm:open-graph-scraper';
 import { extractText } from 'npm:unpdf';
 
@@ -10,7 +10,7 @@ export default async (url: string) => {
 
     // OGP取得のリクエストに失敗した場合は空オブジェクトを返す
     if (!response.ok) {
-      console.log('failed to get ogp');
+      console.log('Failed getOgp');
       return {};
     }
 
@@ -42,11 +42,11 @@ export default async (url: string) => {
 
     const { result } = await ogs({ html });
     console.log('result', JSON.stringify(result, null, 2));
-    console.log('success to get ogp');
+    console.log('Success getOgp');
     return result;
   } catch (e) {
-    console.log(e);
-    console.log('failed to get ogp');
+    console.error(e);
+    console.log('Failed getOgp');
     return {};
   }
 };

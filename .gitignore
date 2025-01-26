@@ -31,4 +31,4 @@ Temporary Items
 .env
 .timestamp
 .itemList.json
-page.pdf
+*.pdf

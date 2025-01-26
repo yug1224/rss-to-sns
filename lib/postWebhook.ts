@@ -15,5 +15,5 @@ export default async (text: string) => {
 
   console.log('postObj', JSON.stringify(postObj, null, 2));
   await fetch(WEBHOOK_URL, postObj);
-  console.log('post to X');
+  console.log('Success postWebhook');
 };

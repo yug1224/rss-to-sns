@@ -1,5 +1,5 @@
-import 'https://deno.land/std@0.193.0/dotenv/load.ts';
-import { delay } from 'https://deno.land/std@0.201.0/async/mod.ts';
+import 'jsr:@std/dotenv/load';
+import { delay } from 'jsr:@std/async';
 import AtprotoAPI from 'npm:@atproto/api';
 import createBlueskyProps from './lib/createBlueskyProps.ts';
 import createXProps from './lib/createXProps.ts';
@@ -11,9 +11,10 @@ import postBluesky from './lib/postBluesky.ts';
 import postWebhook from './lib/postWebhook.ts';
 import resizeImage from './lib/resizeImage.ts';
 
+let cnt, currentItem, itemList;
 try {
   // rss feedから記事リストを取得
-  const itemList = await getItemList();
+  itemList = await getItemList();
 
   // 対象がなかったら終了
   console.log('itemList.length', itemList.length);
@@ -25,10 +26,10 @@ try {
 
   // UTC:01-15時の間のみ実行（JST:10-24時の間のみ実行）
   const nowHour = new Date().getUTCHours();
-  if (!(nowHour >= 1 && nowHour < 15)) {
-    console.log(`${nowHour}:00 is not target time`);
-    Deno.exit(0);
-  }
+  // if (!(nowHour >= 1 && nowHour < 15)) {
+  //   console.log(`${nowHour}:00 is not target time`);
+  //   Deno.exit(0);
+  // }
 
   // Blueskyにログイン
   const { BskyAgent } = AtprotoAPI;
@@ -47,7 +48,7 @@ try {
     1000 * 60 * 10,
   );
 
-  let cnt = 0;
+  cnt = 0;
   // 取得した記事リストをループ処理
   for await (const item of itemList) {
     // isTimeoutがtrueだったら終了
@@ -63,9 +64,12 @@ try {
       break;
     }
 
+    currentItem = item;
+
     // 最終実行時間を更新
     const timestamp = item.published ? new Date(item.published).getTime() : new Date().getTime();
     await Deno.writeTextFile('.timestamp', timestamp.toString());
+
     // 記事リストを更新
     await Deno.writeTextFile(
       '.itemList.json',
@@ -75,11 +79,17 @@ try {
     // URLからOGPの取得
     const og = await getOgp(item.links[0].href || '');
 
+    const path = `${timestamp}.pdf`;
+
     // WebページをPDF化
-    await createPDF(item.links[0].href);
+    await createPDF(item.links[0].href || '', path);
 
     // Gemini APIで要約
-    const summary = await createSummary();
+    const fileInfo = await Deno.stat(path).catch(() => null);
+    let summary;
+    if (fileInfo?.isFile) {
+      summary = await createSummary(path);
+    }
 
     // 投稿記事のプロパティを作成
     const tmpItem = {
@@ -128,6 +138,17 @@ try {
   // 終了
   Deno.exit(0);
 } catch (e) {
+  // エラーが発生した記事をリストの最後に追加して保存する
+  if (currentItem && itemList) {
+    await Deno.writeTextFile(
+      '.itemList.json',
+      JSON.stringify([...itemList.slice(cnt), {
+        ...currentItem,
+        published: itemList.at(-1)?.published || currentItem.published,
+      }]),
+    );
+  }
+
   // エラーが発生したらログを出力して終了
   console.error(e.stack);
   console.error(JSON.stringify(e, null, 2));

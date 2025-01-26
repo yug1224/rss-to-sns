@@ -1,5 +1,5 @@
-import { abortable } from 'https://deno.land/std@0.201.0/async/abortable.ts';
-import AtprotoAPI, { BskyAgent, RichText } from 'npm:@atproto/api';
+import { abortable } from 'jsr:@std/async';
+import AtprotoAPI, { AtpAgent, RichText } from 'npm:@atproto/api';
 
 interface uploadRetry {
   $type?: 'blob';
@@ -16,7 +16,7 @@ export default async ({
   mimeType,
   image,
 }: {
-  agent: BskyAgent;
+  agent: AtpAgent;
   rt: RichText;
   title: string;
   link: string;
@@ -38,7 +38,7 @@ export default async ({
       try {
         const c = new AbortController();
         // 10秒でタイムアウト
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           console.log('timeout to upload image');
           return c.abort();
         }, 1000 * 10 * (retryCount + 1));
@@ -50,7 +50,8 @@ export default async ({
           }),
           c.signal,
         );
-        console.log('success to upload image');
+        console.log('Success uploadImage');
+        clearTimeout(timer);
 
         // 投稿オブジェクトに画像を追加
         return {
@@ -62,15 +63,15 @@ export default async ({
           size: uploadedImage.data.blob.size,
         };
       } catch (e) {
-        console.log('e', JSON.stringify(e, null, 2));
-        // 3回リトライしてもダメならundefinedを返す
-        if (retryCount >= 3) {
-          console.log('failed to upload image');
+        console.error(e);
+
+        if (retryCount >= 5) {
+          console.log('Failed uploadImage');
           return;
         }
 
         // リトライ処理
-        console.log(`upload retry ${retryCount + 1} times`);
+        console.log(`Retry uploadImage`);
         return await uploadRetry(retryCount + 1);
       }
     };
@@ -97,5 +98,5 @@ export default async ({
 
   console.log('postObj', JSON.stringify(postObj, null, 2));
   await agent.post(postObj);
-  console.log('post to Bluesky');
+  console.log('Success postBluesky');
 };

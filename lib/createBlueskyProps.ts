@@ -1,12 +1,12 @@
-import { FeedEntry } from 'https://deno.land/x/rss@0.6.0/src/types/mod.ts';
+import { type FeedEntry } from 'jsr:@mikaelporttila/rss';
 import defaultsGraphemer from 'npm:graphemer';
 const Graphemer = defaultsGraphemer.default;
 const splitter = new Graphemer();
 
-import AtprotoAPI, { BskyAgent } from 'npm:@atproto/api';
+import AtprotoAPI, { AtpAgent } from 'npm:@atproto/api';
 const { RichText } = AtprotoAPI;
 
-export default async (agent: BskyAgent, item: FeedEntry, summary: string) => {
+export default async (agent: AtpAgent, item: FeedEntry, summary?: string) => {
   const title: string = (item.title?.value || '').trim();
   const description: string = (item.description?.value || '').trim();
   const link: string = item.links[0].href || '';
@@ -28,7 +28,9 @@ export default async (agent: BskyAgent, item: FeedEntry, summary: string) => {
       text = `${key}\n${shortenedTitle}${ellipsis}`;
     }
 
-    text = `${text}\n\n${summary}`;
+    if (summary) {
+      text = `${text}\n\n${summary}`;
+    }
 
     const rt = new RichText({ text });
     await rt.detectFacets(agent);
@@ -50,6 +52,6 @@ export default async (agent: BskyAgent, item: FeedEntry, summary: string) => {
     return rt;
   })();
 
-  console.log('success createBlueskyProps');
+  console.log('Success createBlueskyProps');
   return { bskyText, title, link, description };
 };

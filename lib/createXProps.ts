@@ -1,4 +1,5 @@
-import { FeedEntry } from 'https://deno.land/x/rss@0.6.0/src/types/mod.ts';
+import { type FeedEntry } from 'jsr:@mikaelporttila/rss';
+
 import defaultsGraphemer from 'npm:graphemer';
 const Graphemer = defaultsGraphemer.default;
 const splitter = new Graphemer();
@@ -23,6 +24,6 @@ export default async (item: FeedEntry) => {
     return `${link}\n${shortenedTitle}${ellipsis}`;
   })();
 
-  console.log('success createXProps');
+  console.log('Success createXProps');
   return { xText };
 };

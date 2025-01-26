@@ -5,8 +5,12 @@ const systemInstruction = `
 - あなたは優秀なソフトウェアエンジニアです
 - 箇条書きで3行に要約してください
 - 3行の合計文字数は最大140文字にしてください
+- 広告やリコメンドなど、メインの内容とは関係ない部分は含めないでください
 - 回答のみを日本語でMarkdown形式で出力してください
+- 箇条書きは「-」を使った記法に統一してください
+- 文末表現は「体言止め」に統一してください
 - 回答が要求どおりになっているか、セルフレビューしてから出力してください
+- 要約ができなかったときは「要約はできませんでした。」と出力してください
 `;
 
 const apiKey = Deno.env.get('GOOGLE_AI_API_KEY') || '';
@@ -38,47 +42,63 @@ async function waitForFilesActive(files: FileMetadataResponse[]) {
   console.log('...all files ready\n');
 }
 
-export default async (): Promise<string> => {
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash-exp',
-    systemInstruction,
-  });
+export default async (path: string): Promise<string> => {
+  const retry = async (retryCount = 0) => {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash-exp',
+        systemInstruction,
+      });
 
-  const files = [
-    await uploadToGemini(
-      'page.pdf',
-      'application/pdf',
-    ),
-  ];
+      const files = [
+        await uploadToGemini(
+          path,
+          'application/pdf',
+        ),
+      ];
 
-  await waitForFilesActive(files);
+      await waitForFilesActive(files);
 
-  const generationConfig = {
-    temperature: 2,
-    topP: 0.95,
-    topK: 40,
-    maxOutputTokens: 8192,
-    responseMimeType: 'text/plain',
-  };
+      const generationConfig = {
+        temperature: 2,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+        responseMimeType: 'text/plain',
+      };
 
-  const chatSession = model.startChat({
-    generationConfig,
-    history: [
-      {
-        role: 'user',
-        parts: [
+      const chatSession = model.startChat({
+        generationConfig,
+        history: [
           {
-            fileData: {
-              mimeType: files[0].mimeType,
-              fileUri: files[0].uri,
-            },
+            role: 'user',
+            parts: [
+              {
+                fileData: {
+                  mimeType: files[0].mimeType,
+                  fileUri: files[0].uri,
+                },
+              },
+            ],
           },
         ],
-      },
-    ],
-  });
+      });
 
-  const result = await chatSession.sendMessage('INSERT_INPUT_HERE');
-  console.log('Success createSummary');
-  return result.response.text();
+      const result = await chatSession.sendMessage('INSERT_INPUT_HERE');
+      console.log('Success createSummary');
+      return result.response.text();
+    } catch (e) {
+      console.error(e);
+
+      if (retryCount >= 5) {
+        console.log('Failed createSummary');
+        return '';
+      }
+
+      // リトライ処理
+      console.log(`Retry createSummary`);
+      return await retry(retryCount + 1);
+    }
+  };
+  return await retry();
 };
