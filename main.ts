@@ -39,24 +39,14 @@ try {
   const password = Deno.env.get('BLUESKY_PASSWORD') || '';
   await agent.login({ identifier, password });
 
-  // 10分後に処理を終了させるためにフラグを立てる
-  let isTimeout = false;
-  setTimeout(
-    () => {
-      isTimeout = true;
-    },
-    1000 * 60 * 10,
-  );
+  // 10分後に処理を終了させる
+  setTimeout(() => {
+    throw new Error('Timeout main');
+  }, 1000 * 60 * 10);
 
   cnt = 0;
   // 取得した記事リストをループ処理
   for await (const item of itemList) {
-    // isTimeoutがtrueだったら終了
-    if (isTimeout) {
-      console.log('timeout');
-      break;
-    }
-
     // 投稿回数をカウントし、3件以上投稿したら終了
     cnt++;
     if (cnt > 3) {
@@ -144,7 +134,7 @@ try {
       '.itemList.json',
       JSON.stringify([...itemList.slice(cnt), {
         ...currentItem,
-        published: itemList.at(-1)?.published || currentItem.published,
+        published: itemList.at(-1)?.published || currentItem,
       }]),
     );
   }
