@@ -13,6 +13,10 @@ jobs:
       # リポジトリのチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: latest
       # Denoのセットアップ
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -61,7 +65,9 @@ jobs:
           echo "[]" > .itemList.json
       # Denoの実行
       - name: Deno Run
-        run: deno run -A main.ts
+        run: |
+          deno install
+          deno run -A main.ts
         env:
           BLUESKY_IDENTIFIER: ${{secrets.BLUESKY_IDENTIFIER}}
           BLUESKY_PASSWORD: ${{secrets.BLUESKY_PASSWORD}}

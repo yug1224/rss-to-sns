@@ -28,6 +28,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+node_modules
+
 .env
 .timestamp
 .itemList.json

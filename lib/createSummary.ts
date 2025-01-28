@@ -9,8 +9,8 @@ const systemInstruction = `
 - 回答のみを日本語でMarkdown形式で出力してください
 - 箇条書きは「-」を使った記法に統一してください
 - 文末表現は「体言止め」に統一してください
+- 文末に句点「。」を付けないでください
 - 回答が要求どおりになっているか、セルフレビューしてから出力してください
-- 要約ができなかったときは「要約はできませんでした。」と出力してください
 `;
 
 const apiKey = Deno.env.get('GOOGLE_AI_API_KEY') || '';
@@ -91,8 +91,7 @@ export default async (path: string): Promise<string> => {
       console.error(e);
 
       if (retryCount >= 5) {
-        console.log('Failed createSummary');
-        return '';
+        throw new Error('Failed createSummary');
       }
 
       // リトライ処理

@@ -11,7 +11,7 @@ import postBluesky from './lib/postBluesky.ts';
 import postWebhook from './lib/postWebhook.ts';
 import resizeImage from './lib/resizeImage.ts';
 
-let cnt, currentItem, itemList;
+let cnt = 0, currentItem, itemList;
 try {
   // rss feedから記事リストを取得
   itemList = await getItemList();
@@ -26,10 +26,10 @@ try {
 
   // UTC:01-15時の間のみ実行（JST:10-24時の間のみ実行）
   const nowHour = new Date().getUTCHours();
-  // if (!(nowHour >= 1 && nowHour < 15)) {
-  //   console.log(`${nowHour}:00 is not target time`);
-  //   Deno.exit(0);
-  // }
+  if (!(nowHour >= 1 && nowHour < 15)) {
+    console.log(`${nowHour}:00 is not target time`);
+    Deno.exit(0);
+  }
 
   // Blueskyにログイン
   const { BskyAgent } = AtprotoAPI;
@@ -44,7 +44,6 @@ try {
     throw new Error('Timeout main');
   }, 1000 * 60 * 10);
 
-  cnt = 0;
   // 取得した記事リストをループ処理
   for await (const item of itemList) {
     // 投稿回数をカウントし、3件以上投稿したら終了
@@ -66,18 +65,24 @@ try {
       JSON.stringify(itemList.slice(cnt)),
     );
 
+    const href = item.links[0].href || '';
+
     // URLからOGPの取得
-    const og = await getOgp(item.links[0].href || '');
-
-    const path = `${timestamp}.pdf`;
-
-    // WebページをPDF化
-    await createPDF(item.links[0].href || '', path);
-
-    // Gemini APIで要約
-    const fileInfo = await Deno.stat(path).catch(() => null);
+    const og = await getOgp(href);
     let summary;
-    if (fileInfo?.isFile) {
+    if (
+      href.startsWith('https://www.youtube.com') || href.startsWith('https://creators.spotify.com') ||
+      href.startsWith('https://art19.com') || href.startsWith('https://pivotmedia.co.jp')
+    ) {
+      // 動画や音声コンテンツ系はスキップ
+      console.log('Skip createPDF');
+    } else {
+      const path = `${timestamp}.pdf`;
+
+      // WebページをPDF化
+      await createPDF(href, path);
+
+      // Gemini APIで要約
       summary = await createSummary(path);
     }
 
@@ -125,6 +130,7 @@ try {
     await delay(1000 * 15);
   }
 
+  console.log('Success main');
   // 終了
   Deno.exit(0);
 } catch (e) {
@@ -134,7 +140,7 @@ try {
       '.itemList.json',
       JSON.stringify([...itemList.slice(cnt), {
         ...currentItem,
-        published: itemList.at(-1)?.published || currentItem,
+        published: itemList.at(-1)?.published || currentItem.published,
       }]),
     );
   }

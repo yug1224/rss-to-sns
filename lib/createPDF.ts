@@ -1,34 +1,41 @@
 import { abortable } from 'jsr:@std/async';
-import { launch } from 'jsr:@astral/astral';
+import puppeteer from 'npm:puppeteer-core';
+
 export default async (url: string, path: string) => {
   const retry = async (retryCount = 0) => {
+    let browser: puppeteer.Browser | undefined;
     try {
-      if (
-        url.startsWith('https://www.youtube.com') || url.startsWith('https://creators.spotify.com') ||
-        url.startsWith('https://art19.com') || url.startsWith('https://pivotmedia.co.jp')
-      ) {
-        // 動画や音声コンテンツ系はスキップ
-        console.log('Skip createPDF');
-        return;
-      }
-
       const c = new AbortController();
-      // 10秒でタイムアウト
+
       const timer = setTimeout(() => {
         console.log('Timeout createPDF');
         return c.abort();
-      }, 1000 * 10 * (retryCount + 1));
+      }, 1000 * 60 * 5);
 
       await abortable(
         (async () => {
-          const browser = await launch();
+          browser = await puppeteer.launch({ channel: 'chrome' });
           const page = await browser.newPage();
+          page.setDefaultNavigationTimeout(1000 * 60 * 3);
+          page.setDefaultTimeout(1000 * 60 * 3);
           await page.goto(url, { waitUntil: 'load' });
 
           if (url.startsWith('https://speakerdeck.com')) {
             // SpeakerDeckの場合は、PDFをダウンロードする
             const el = await page.$('a[title="Download PDF"]');
-            const href = await el?.getAttribute('href') || '';
+            // const href = await el?.getAttribute('href') || '';
+            const href = await el?.evaluate((el) => el?.getAttribute('href') || '');
+
+            const response = await fetch(href);
+            if (response.body) {
+              const file = await Deno.open(path, { write: true, create: true });
+              await response.body.pipeTo(file.writable);
+            }
+          } else if (url.startsWith('https://www.docswell.com')) {
+            // docswellの場合は、PDFをダウンロードする
+            const el = await page.$('a[href$="download"]');
+            // const href = await el?.getAttribute('href') || '';
+            const href = await el?.evaluate((el) => el?.getAttribute('href') || '');
 
             const response = await fetch(href);
             if (response.body) {
@@ -38,8 +45,9 @@ export default async (url: string, path: string) => {
           } else {
             // Webページの場合は、PDF化する
             const pdf = await page.pdf({
-              paperWidth: 33.1,
-              paperHeight: 46.8,
+              // paperWidth: 33.1,
+              // paperHeight: 46.8,
+              format: 'A0',
             });
             Deno.writeFileSync(path, pdf);
           }
@@ -53,6 +61,9 @@ export default async (url: string, path: string) => {
       return;
     } catch (e) {
       console.error(e);
+      if (browser) {
+        await browser.close();
+      }
 
       if (retryCount >= 5) {
         console.log('Failed createPDF');
