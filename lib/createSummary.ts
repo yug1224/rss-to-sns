@@ -86,7 +86,7 @@ export default async (path: string): Promise<string> => {
 
       const result = await chatSession.sendMessage('INSERT_INPUT_HERE');
       console.log('Success createSummary');
-      return result.response.text();
+      return result.response.text().trim();
     } catch (e) {
       console.error(e);
 
