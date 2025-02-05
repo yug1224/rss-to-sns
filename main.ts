@@ -71,8 +71,13 @@ try {
     const og = await getOgp(href);
     let summary;
     if (
-      href.startsWith('https://www.youtube.com') || href.startsWith('https://creators.spotify.com') ||
-      href.startsWith('https://art19.com') || href.startsWith('https://pivotmedia.co.jp')
+      [
+        'https://art19.com',
+        'https://creators.spotify.com',
+        'https://pivotmedia.co.jp',
+        'https://www.youtube.com',
+        'https://yug1224.hatenablog.jp',
+      ].some((url) => href.startsWith(url))
     ) {
       // 動画や音声コンテンツ系はスキップ
       console.log('Skip createPDF');
