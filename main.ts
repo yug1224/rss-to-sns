@@ -24,13 +24,6 @@ try {
     Deno.exit(0);
   }
 
-  // UTC:01-15時の間のみ実行（JST:10-24時の間のみ実行）
-  const nowHour = new Date().getUTCHours();
-  if (!(nowHour >= 1 && nowHour < 15)) {
-    console.log(`${nowHour}:00 is not target time`);
-    Deno.exit(0);
-  }
-
   // Blueskyにログイン
   const { BskyAgent } = AtprotoAPI;
   const service = 'https://bsky.social';
