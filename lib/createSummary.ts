@@ -46,7 +46,7 @@ export default async (path: string): Promise<string> => {
   const retry = async (retryCount = 0) => {
     try {
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-2.0-flash',
         systemInstruction,
       });
 
