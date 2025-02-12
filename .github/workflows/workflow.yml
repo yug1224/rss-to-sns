@@ -1,8 +1,8 @@
 name: RSS to SNS
 on:
   schedule:
-    # UTC:01-15時の間（JST:10-24時）、15分ごとに実行
-    - cron: '*/15 1-15 * * *'
+    # 15分ごとに実行
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 jobs:
   rss-to-sns:
