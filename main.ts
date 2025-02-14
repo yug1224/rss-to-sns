@@ -72,6 +72,7 @@ try {
     let summary;
     if (
       [
+        'https://anond.hatelabo.jp/',
         'https://art19.com',
         'https://creators.spotify.com',
         'https://pivotmedia.co.jp',
