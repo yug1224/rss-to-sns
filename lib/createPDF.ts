@@ -42,6 +42,13 @@ export default async (url: string, path: string) => {
               const file = await Deno.open(path, { write: true, create: true });
               await response.body.pipeTo(file.writable);
             }
+          } else if (url.endsWith('.pdf')) {
+            // pdfファイルの場合は、そのまま保存する
+            const response = await fetch(url);
+            if (response.body) {
+              const file = await Deno.open(path, { write: true, create: true });
+              await response.body.pipeTo(file.writable);
+            }
           } else {
             // Webページの場合は、PDF化する
             const pdf = await page.pdf({
