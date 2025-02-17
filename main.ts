@@ -118,7 +118,18 @@ try {
         console.log('ogp image not found');
         return {};
       }
-      return await resizeImage(new URL(ogImage.url, link).href);
+
+      const { href, hostname } = new URL(ogImage.url, link);
+
+      // hostnameがプライベートIPアドレスだった場合は早期リターン
+      if (
+        /^(10|172\.16|192\.168)\./.test(hostname)
+      ) {
+        console.log('private ip address');
+        return {};
+      }
+
+      return await resizeImage(href);
     })();
 
     // Blueskyに投稿
