@@ -6,6 +6,7 @@
     "jsr:@mikaelporttila/rss@*": "1.1.1",
     "jsr:@std/async@*": "1.0.10",
     "jsr:@std/dotenv@*": "0.225.3",
+    "jsr:@std/path@*": "1.0.8",
     "npm:@atproto/api@*": "0.13.32",
     "npm:@google/generative-ai@*": "0.21.0",
     "npm:graphemer@*": "1.4.0",
@@ -32,6 +33,9 @@
     },
     "@std/dotenv@0.225.3": {
       "integrity": "a95e5b812c27b0854c52acbae215856d9cce9d4bbf774d938c51d212711e8d4a"
+    },
+    "@std/path@1.0.8": {
+      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
     }
   },
   "npm": {

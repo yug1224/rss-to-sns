@@ -1,10 +1,11 @@
 import 'jsr:@std/dotenv/load';
 import { delay } from 'jsr:@std/async';
+import * as path from 'jsr:@std/path';
 import AtprotoAPI from 'npm:@atproto/api';
 import createBlueskyProps from './lib/createBlueskyProps.ts';
-import createXProps from './lib/createXProps.ts';
 import createPDF from './lib/createPDF.ts';
 import createSummary from './lib/createSummary.ts';
+import createXProps from './lib/createXProps.ts';
 import getItemList from './lib/getItemList.ts';
 import getOgp from './lib/getOgp.ts';
 import postBluesky from './lib/postBluesky.ts';
@@ -67,8 +68,15 @@ try {
 
     const href = item.links[0].href || '';
 
-    // URLからOGPの取得
-    const og = await getOgp(href);
+    let og;
+    if (href.endsWith('.pdf')) {
+      // 拡張子がpdfだったら、ファイル名をog.ogTitleに格納する
+      og = { ogTitle: path.basename(href) };
+    } else {
+      // URLからOGPの取得
+      og = await getOgp(href);
+    }
+
     let summary;
     if (
       [
