@@ -14,6 +14,16 @@ export default async (url: string, path: string) => {
 
       await abortable(
         (async () => {
+          if (url.endsWith('.pdf')) {
+            // pdfファイルの場合は、そのまま保存する
+            const response = await fetch(url);
+            if (response.body) {
+              const file = await Deno.open(path, { write: true, create: true });
+              await response.body.pipeTo(file.writable);
+            }
+            return;
+          }
+
           browser = await puppeteer.launch({ channel: 'chrome' });
           const page = await browser.newPage();
           page.setDefaultNavigationTimeout(1000 * 60 * 3);
@@ -38,13 +48,6 @@ export default async (url: string, path: string) => {
             const href = await el?.evaluate((el) => el?.getAttribute('href') || '');
 
             const response = await fetch(href);
-            if (response.body) {
-              const file = await Deno.open(path, { write: true, create: true });
-              await response.body.pipeTo(file.writable);
-            }
-          } else if (url.endsWith('.pdf')) {
-            // pdfファイルの場合は、そのまま保存する
-            const response = await fetch(url);
             if (response.body) {
               const file = await Deno.open(path, { write: true, create: true });
               await response.body.pipeTo(file.writable);
