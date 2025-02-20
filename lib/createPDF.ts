@@ -32,9 +32,14 @@ export default async (url: string, path: string) => {
 
           if (url.startsWith('https://speakerdeck.com')) {
             // SpeakerDeckの場合は、PDFをダウンロードする
-            const el = await page.$('a[title="Download PDF"]');
-            // const href = await el?.getAttribute('href') || '';
-            const href = await el?.evaluate((el) => el?.getAttribute('href') || '');
+            let href = '';
+            try {
+              href = await page.$eval('a[title="Download PDF"]', (el) => el.getAttribute('href'));
+            } catch {
+              console.log('href not found');
+            }
+            // hrefが存在しない場合は早期リターンする
+            if (!href) return;
 
             const response = await fetch(href);
             if (response.body) {
@@ -43,9 +48,14 @@ export default async (url: string, path: string) => {
             }
           } else if (url.startsWith('https://www.docswell.com')) {
             // docswellの場合は、PDFをダウンロードする
-            const el = await page.$('a[href$="download"]');
-            // const href = await el?.getAttribute('href') || '';
-            const href = await el?.evaluate((el) => el?.getAttribute('href') || '');
+            let href = '';
+            try {
+              href = await page.$eval('a[href$="download"]', (el) => el.getAttribute('href') || '');
+            } catch {
+              console.log('href not found');
+            }
+            // hrefが存在しない場合は早期リターンする
+            if (!href) return;
 
             const response = await fetch(href);
             if (response.body) {

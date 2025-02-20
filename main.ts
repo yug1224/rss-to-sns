@@ -97,8 +97,13 @@ try {
       await createPDF(href, path);
 
       // ファイルサイズが40MB以下の場合のみ要約を作成する
-      const fileInfo = await Deno.stat(path);
-      if (fileInfo.size < 40 * 1024 * 1024) {
+      let fileInfo;
+      try {
+        fileInfo = await Deno.stat(path);
+      } catch {
+        console.log('file not found');
+      }
+      if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
         // Gemini APIで要約
         summary = await createSummary(path);
       }
