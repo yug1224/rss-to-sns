@@ -1,11 +1,17 @@
-import { type FeedEntry } from 'jsr:@mikaelporttila/rss';
-
 import defaultsGraphemer from 'npm:graphemer';
 const Graphemer = defaultsGraphemer.default;
 const splitter = new Graphemer();
 
+interface Item {
+  links: { href?: string }[];
+  published?: string;
+  title?: { value?: string };
+  description?: { value?: string };
+  id: string;
+}
+
 // deno-lint-ignore require-await
-export default async (item: FeedEntry) => {
+export default async (item: Item) => {
   const title: string = (item.title?.value || '').trim();
   const link: string = item.links[0].href || '';
 

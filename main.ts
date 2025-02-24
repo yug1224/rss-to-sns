@@ -12,175 +12,200 @@ import postBluesky from './lib/postBluesky.ts';
 import postWebhook from './lib/postWebhook.ts';
 import resizeImage from './lib/resizeImage.ts';
 
-let cnt = 0, currentItem, itemList;
-try {
-  // rss feedから記事リストを取得
-  itemList = await getItemList();
-
-  // 対象がなかったら終了
-  console.log('itemList.length', itemList.length);
-  console.log('itemList', JSON.stringify(itemList, null, 2));
-  if (!itemList.length) {
-    console.log('not found feed item');
-    Deno.exit(0);
-  }
-
-  // UTC:01-15時の間のみ実行（JST:10-24時の間のみ実行）
-  const nowHour = new Date().getUTCHours();
-  if (!(nowHour >= 1 && nowHour < 15)) {
-    console.log(`${nowHour}:00 is not target time`);
-    Deno.exit(0);
-  }
-
-  // Blueskyにログイン
-  const { BskyAgent } = AtprotoAPI;
-  const service = 'https://bsky.social';
-  const agent = new BskyAgent({ service });
-  const identifier = Deno.env.get('BLUESKY_IDENTIFIER') || '';
-  const password = Deno.env.get('BLUESKY_PASSWORD') || '';
-  await agent.login({ identifier, password });
-
-  // 10分後に処理を終了させる
-  setTimeout(() => {
-    throw new Error('Timeout main');
-  }, 1000 * 60 * 10);
-
-  // 取得した記事リストをループ処理
-  for await (const item of itemList) {
-    // 投稿回数をカウントし、3件以上投稿したら終了
-    cnt++;
-    if (cnt > 3) {
-      console.log('post count over');
-      break;
-    }
-
-    currentItem = item;
-
-    // 最終実行時間を更新
-    const timestamp = item.published ? new Date(item.published).getTime() : new Date().getTime();
-    await Deno.writeTextFile('.timestamp', timestamp.toString());
-
-    // 記事リストを更新
-    await Deno.writeTextFile(
-      '.itemList.json',
-      JSON.stringify(itemList.slice(cnt)),
-    );
-
-    const href = item.links[0].href || '';
-
-    let og;
-    if (href.endsWith('.pdf')) {
-      // 拡張子がpdfだったら、ファイル名をog.ogTitleに格納する
-      og = { ogTitle: path.basename(href) };
-    } else {
-      // URLからOGPの取得
-      og = await getOgp(href);
-    }
-
-    let summary;
-    if (
-      [
-        'https://anond.hatelabo.jp/',
-        'https://art19.com',
-        'https://creators.spotify.com',
-        'https://pivotmedia.co.jp',
-        'https://www.youtube.com',
-        'https://yug1224.hatenablog.jp',
-      ].some((url) => href.startsWith(url))
-    ) {
-      // 動画や音声コンテンツ系はスキップ
-      console.log('Skip createPDF');
-    } else {
-      const path = `${timestamp}.pdf`;
-
-      // WebページをPDF化
-      await createPDF(href, path);
-
-      // ファイルサイズが40MB以下の場合のみ要約を作成する
-      let fileInfo;
-      try {
-        fileInfo = await Deno.stat(path);
-      } catch {
-        console.log('file not found');
-      }
-      if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
-        // Gemini APIで要約
-        summary = await createSummary(path);
-      }
-    }
-
-    // 投稿記事のプロパティを作成
-    const tmpItem = {
-      ...item,
-      title: { value: og.ogTitle || item.title?.value || '' },
-      description: {
-        value: og.ogDescription || item.description?.value || '',
-      },
-    };
-    const { bskyText, title, link, description } = await createBlueskyProps(
-      agent,
-      tmpItem,
-      summary,
-    );
-    const { xText } = await createXProps(tmpItem);
-
-    // 画像のリサイズ
-    const { mimeType, resizedImage } = await (async () => {
-      const ogImage = og.ogImage?.at(0);
-      if (!ogImage) {
-        console.log('ogp image not found');
-        return {};
-      }
-
-      const { href, hostname } = new URL(ogImage.url, link);
-
-      // hostnameがプライベートIPアドレスだった場合は早期リターン
-      if (
-        /^(10|172\.16|192\.168)\./.test(hostname)
-      ) {
-        console.log('private ip address');
-        return {};
-      }
-
-      return await resizeImage(href);
-    })();
-
-    // Blueskyに投稿
-    await postBluesky({
-      agent,
-      rt: bskyText,
-      title,
-      link,
-      description,
-      mimeType,
-      image: resizedImage,
-    });
-
-    // IFTTTを使ってXに投稿
-    await postWebhook(xText);
-
-    // 15秒待つ
-    console.log('wait 15 seconds');
-    await delay(1000 * 15);
-  }
-
-  console.log('Success main');
-  // 終了
-  Deno.exit(0);
-} catch (e) {
-  // エラーが発生した記事をリストの最後に追加して保存する
-  if (currentItem && itemList) {
-    await Deno.writeTextFile(
-      '.itemList.json',
-      JSON.stringify([...itemList.slice(cnt), {
-        ...currentItem,
-        published: itemList.at(-1)?.published || currentItem.published,
-      }]),
-    );
-  }
-
-  // エラーが発生したらログを出力して終了
-  console.error(e.stack);
-  console.error(JSON.stringify(e, null, 2));
-  Deno.exit(1);
+// フィードアイテムのインターフェース
+interface Item {
+  links: { href?: string }[];
+  published?: string;
+  title?: { value?: string };
+  description?: { value?: string };
+  id: string;
 }
+
+/**
+ * 各フィードアイテムを処理する関数
+ * @param {AtprotoAPI.AtpAgent} agent - Bluesky エージェント
+ * @param {Item} item - 処理するフィードアイテム
+ * @param {number} timestamp - タイムスタンプ
+ */
+async function processItem(
+  agent: AtprotoAPI.AtpAgent,
+  item: Item,
+  timestamp: number,
+) {
+  const href = item.links[0].href || '';
+
+  // OGP情報を取得
+  let og: { ogTitle?: string; ogDescription?: string; ogImage?: { url: string }[] } = {};
+  if (href.endsWith('.pdf')) {
+    // PDFの場合はファイル名をタイトルとする
+    og = { ogTitle: path.basename(href) };
+  } else {
+    og = await getOgp(href);
+  }
+
+  // 要約を生成
+  let summary;
+  if (
+    ![
+      'https://anond.hatelabo.jp/',
+      'https://art19.com',
+      'https://creators.spotify.com',
+      'https://pivotmedia.co.jp',
+      'https://www.youtube.com',
+      'https://yug1224.hatenablog.jp',
+    ].some((url) => href.startsWith(url))
+  ) {
+    const pdfPath = `${timestamp}.pdf`;
+    await createPDF(href, pdfPath);
+
+    let fileInfo;
+    try {
+      fileInfo = await Deno.stat(pdfPath);
+    } catch {
+      console.log('file not found');
+    }
+    // PDFファイルサイズが40MB未満の場合のみ要約を作成
+    if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
+      summary = await createSummary(pdfPath);
+    }
+  }
+
+  // Bluesky および X 投稿用のデータを準備
+  const tmpItem = {
+    ...item,
+    title: { value: og.ogTitle || item.title?.value || '' },
+    description: {
+      value: og.ogDescription || item.description?.value || '',
+    },
+  };
+  const { bskyText, title, link, description } = await createBlueskyProps(
+    agent,
+    tmpItem as Item,
+    summary,
+  );
+  const { xText } = await createXProps(tmpItem as Item);
+
+  // OGP画像をリサイズ
+  const { mimeType, resizedImage } = await (async () => {
+    const ogImage = og.ogImage?.at(0);
+    if (!ogImage) {
+      console.log('ogp image not found');
+      return {};
+    }
+
+    const { href, hostname } = new URL(ogImage.url, link);
+
+    // プライベートIPアドレスの場合は処理をスキップ
+    if (/^(10|172\.16|192\.168)\./.test(hostname)) {
+      console.log('private ip address');
+      return {};
+    }
+
+    return await resizeImage(href);
+  })();
+
+  // Bluesky に投稿
+  await postBluesky({
+    agent,
+    rt: bskyText,
+    title,
+    link,
+    description,
+    mimeType,
+    image: resizedImage,
+  });
+
+  // Webhook を送信 (Xへの投稿)
+  await postWebhook(xText);
+}
+
+/**
+ * メイン関数
+ */
+async function main() {
+  let cnt = 0;
+  let currentItem: Item | undefined;
+  let itemList: Item[] | undefined;
+
+  try {
+    // フィードアイテムリストを取得
+    itemList = await getItemList();
+
+    console.log('itemList.length', itemList.length);
+    console.log('itemList', JSON.stringify(itemList, null, 2));
+    if (!itemList.length) {
+      console.log('not found feed item');
+      Deno.exit(0);
+    }
+
+    // 投稿対象の時間帯か確認 (UTC時間で1時から15時の間)
+    const nowHour = new Date().getUTCHours();
+    if (!(nowHour >= 1 && nowHour < 15)) {
+      console.log(`${nowHour}:00 is not target time`);
+      Deno.exit(0);
+    }
+
+    // Bluesky エージェントを初期化
+    const { BskyAgent } = AtprotoAPI;
+    const service = 'https://bsky.social';
+    const agent = new BskyAgent({ service });
+    const identifier = Deno.env.get('BLUESKY_IDENTIFIER') || '';
+    const password = Deno.env.get('BLUESKY_PASSWORD') || '';
+    await agent.login({ identifier, password });
+
+    // 10分間のタイムアウトを設定
+    setTimeout(() => {
+      throw new Error('Timeout main');
+    }, 1000 * 60 * 10);
+
+    // 各アイテムを処理
+    for await (const item of itemList) {
+      cnt++;
+      // 投稿数が3件を超えたら終了
+      if (cnt > 3) {
+        console.log('post count over');
+        break;
+      }
+
+      currentItem = item;
+
+      // タイムスタンプをファイルに書き込む
+      const timestamp = item.published ? new Date(item.published).getTime() : new Date().getTime();
+      await Deno.writeTextFile('.timestamp', timestamp.toString());
+      await Deno.writeTextFile(
+        '.itemList.json',
+        JSON.stringify(itemList.slice(cnt)),
+      );
+
+      // アイテムを処理
+      await processItem(agent, item, timestamp);
+
+      console.log('wait 15 seconds');
+      await delay(1000 * 15); // 15秒待機
+    }
+
+    console.log('Success main');
+    Deno.exit(0);
+  } catch (e: unknown) {
+    // エラーが発生した場合、処理中のアイテムと残りのアイテムリストをファイルに保存
+    if (currentItem && itemList) {
+      await Deno.writeTextFile(
+        '.itemList.json',
+        JSON.stringify([...itemList.slice(cnt), {
+          ...currentItem,
+          published: itemList?.at(-1)?.published || currentItem?.published,
+        }]),
+      );
+    }
+
+    // エラー情報を出力
+    if (e instanceof Error) {
+      console.error(e.stack);
+    }
+    console.error(JSON.stringify(e, null, 2));
+    Deno.exit(1);
+  }
+}
+
+// メイン関数を実行
+main();

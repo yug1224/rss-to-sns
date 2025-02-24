@@ -1,4 +1,12 @@
-import { type FeedEntry, parseFeed } from 'jsr:@mikaelporttila/rss';
+import { parseFeed } from 'jsr:@mikaelporttila/rss';
+
+interface Item {
+  links: { href?: string }[];
+  published?: string;
+  title?: { value?: string };
+  description?: { value?: string };
+  id: string;
+}
 
 const lastExecutionTime = await Deno.readTextFile('.timestamp');
 console.log(lastExecutionTime.trim());
@@ -16,17 +24,21 @@ export default async () => {
 
   // 前回残した記事リストを取得
   const lastItemList = await Deno.readTextFile('.itemList.json');
-  const itemList: FeedEntry[] = lastItemList ? JSON.parse(lastItemList) : [];
+  const itemList: Item[] = lastItemList ? JSON.parse(lastItemList) : [];
 
   // 最終実行時間以降かつdescriptionがある記事を抽出
   // 前回残した記事リストと今回取得した記事リストをマージ
-  feed.entries.reverse().map((item: FeedEntry) => {
+  feed.entries.reverse().map((item) => {
     if (
       item.published &&
       new Date(Number(lastExecutionTime.trim())) < new Date(item.published) &&
-      itemList.findIndex((i: FeedEntry) => i.id === item.id) === -1
+      itemList.findIndex((i) => i.id === item.id) === -1
     ) {
-      itemList.push(item);
+      itemList.push({
+        ...item,
+        published: item.published.toISOString(),
+        id: item.id,
+      });
     }
   });
 

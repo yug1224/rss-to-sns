@@ -1,4 +1,3 @@
-import { type FeedEntry } from 'jsr:@mikaelporttila/rss';
 import defaultsGraphemer from 'npm:graphemer';
 const Graphemer = defaultsGraphemer.default;
 const splitter = new Graphemer();
@@ -6,7 +5,15 @@ const splitter = new Graphemer();
 import AtprotoAPI, { AtpAgent } from 'npm:@atproto/api';
 const { RichText } = AtprotoAPI;
 
-export default async (agent: AtpAgent, item: FeedEntry, summary?: string) => {
+interface Item {
+  links: { href?: string }[];
+  published?: string;
+  title?: { value?: string };
+  description?: { value?: string };
+  id: string;
+}
+
+export default async (agent: AtpAgent, item: Item, summary?: string) => {
   const title: string = (item.title?.value || '').trim();
   const description: string = (item.description?.value || '').trim();
   const link: string = item.links[0].href || '';
