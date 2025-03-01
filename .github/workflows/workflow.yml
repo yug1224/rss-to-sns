@@ -74,6 +74,7 @@ jobs:
           RSS_URL: ${{secrets.RSS_URL}}
           WEBHOOK_URL: ${{secrets.WEBHOOK_URL}}
           GOOGLE_AI_API_KEY: ${{secrets.GOOGLE_AI_API_KEY}}
+          GEMINI_MODEL: ${{secrets.GEMINI_MODEL}}
       # Cacheの保存
       - name: Save Last Execution Time Cache
         uses: actions/cache/save@v4
