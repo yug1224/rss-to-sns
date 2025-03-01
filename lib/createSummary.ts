@@ -45,8 +45,9 @@ async function waitForFilesActive(files: FileMetadataResponse[]) {
 export default async (path: string): Promise<string> => {
   const retry = async (retryCount = 0) => {
     try {
+      const modelName = Deno.env.get('GEMINI_MODEL') || 'gemini-2.0-flash';
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: modelName,
         systemInstruction,
       });
 
