@@ -89,7 +89,7 @@ export default async ({
         external: {
           uri: link,
           title,
-          description,
+          description: '', // 一時的にdescriptionは空にする
           thumb,
         },
       },
