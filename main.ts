@@ -4,8 +4,9 @@ import * as path from 'jsr:@std/path';
 import AtprotoAPI from 'npm:@atproto/api';
 import createBlueskyProps from './lib/createBlueskyProps.ts';
 import createPDF from './lib/createPDF.ts';
-import createSummary from './lib/createSummary.ts';
+import createPDFSummary from './lib/createPDFSummary.ts';
 import createXProps from './lib/createXProps.ts';
+import createYouTubeSummary from './lib/createYouTubeSummary.ts';
 import getItemList from './lib/getItemList.ts';
 import getOgp from './lib/getOgp.ts';
 import postBluesky from './lib/postBluesky.ts';
@@ -45,6 +46,9 @@ async function processItem(
 
   // 要約を生成
   let summary;
+  if (href.startsWith('https://www.youtube.com')) {
+    summary = await createYouTubeSummary(href);
+  }
   if (
     ![
       'https://anond.hatelabo.jp/',
@@ -66,7 +70,7 @@ async function processItem(
     }
     // PDFファイルサイズが40MB未満の場合のみ要約を作成
     if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
-      summary = await createSummary(pdfPath);
+      summary = await createPDFSummary(pdfPath);
     }
   }
 
