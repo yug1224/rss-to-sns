@@ -45,7 +45,7 @@ async function processItem(
   }
 
   // 要約を生成
-  let summary;
+  let summary = '';
   if (href.startsWith('https://www.youtube.com')) {
     summary = await createYouTubeSummary(href);
   }

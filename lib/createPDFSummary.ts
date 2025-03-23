@@ -2,15 +2,16 @@ import { FileMetadataResponse, GoogleAIFileManager } from 'npm:@google/generativ
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai';
 
 const systemInstruction = `
-- あなたは優秀な要約ジェネレーターです
-- 3行に要約してください
-- 文字数は必ず合計最大100文字までにしてください
+- あなたは技術ドキュメントの要約に特化したアシスタントです
+- 主要な3つのポイントを抽出してください
+- 各項目は30文字以内で1行で記述してください
+- 各項目は必ず異なる内容にしてください
+- 3つの項目の合計文字数は100文字以内としてください
 - 目次・広告・リコメンドなど、メインの内容とは関係ない部分は要約に含めないでください
 - 要約は「-」を使った箇条書きの記法に統一してください
 - 文末表現は「体言止め」に統一してください
 - 文末に句点「。」を付けないでください
 - 出力は日本語で要約結果のみを出力してください
-- 要求どおりになっているか、日本語的におかしくないか、セルフレビューしてから出力してください
 `;
 
 const apiKey = Deno.env.get('GOOGLE_AI_API_KEY') || '';
@@ -86,9 +87,11 @@ export default async (path: string): Promise<string> => {
       });
 
       const result = await chatSession.sendMessage('INSERT_INPUT_HERE');
-      const summary = result.response.text().trim();
+      const responseText = result.response.text().trim();
+      const [summary] = responseText.match(/^-\s.*$\n^-\s.*$\n^-\s.*$/m) || [''];
       console.log('Success createPDFSummary');
       console.log(summary);
+
       return summary;
     } catch (e) {
       console.error(e);
