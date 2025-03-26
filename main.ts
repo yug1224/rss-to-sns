@@ -87,7 +87,7 @@ async function processItem(
     tmpItem as Item,
     summary,
   );
-  const { xText } = await createXProps(tmpItem as Item);
+  const { xText } = await createXProps(tmpItem as Item, summary);
 
   // OGP画像をリサイズ
   const { mimeType, resizedImage } = await (async () => {
