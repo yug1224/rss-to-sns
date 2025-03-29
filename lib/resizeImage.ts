@@ -1,28 +1,28 @@
 import sharp from 'npm:sharp';
 
 export default async (url: string) => {
-  const fetchRetry = async (url: string, retryCount = 0): Promise<Response | undefined> => {
-    const response = await fetch(url);
-    const contentType = response.headers.get('content-type') || '';
-
-    // 画像が取得できなかった場合
-    if (!response.ok || !contentType?.includes('image')) {
-      if (retryCount >= 5) return;
-
-      // リトライ処理
-      console.log(`Retry getImage`);
-      return await fetchRetry(url, retryCount + 1);
-    }
-    return response;
-  };
-  const response = await fetchRetry(url);
-  if (!response) {
-    console.log('Failed getImage');
-    return {};
-  }
-  const buffer = await response.arrayBuffer();
-
   try {
+    const fetchRetry = async (url: string, retryCount = 0): Promise<Response | undefined> => {
+      const response = await fetch(url);
+      const contentType = response.headers.get('content-type') || '';
+
+      // 画像が取得できなかった場合
+      if (!response.ok || !contentType?.includes('image')) {
+        if (retryCount >= 5) return;
+
+        // リトライ処理
+        console.log(`Retry getImage`);
+        return await fetchRetry(url, retryCount + 1);
+      }
+      return response;
+    };
+    const response = await fetchRetry(url);
+    if (!response) {
+      console.log('Failed getImage');
+      return {};
+    }
+    const buffer = await response.arrayBuffer();
+
     const resizeRetry = async ({
       buffer,
       retryCount = 0,
