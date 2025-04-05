@@ -105,7 +105,7 @@ async function processItem(
       return {};
     }
 
-    return await resizeImage(href);
+    return await resizeImage(href, timestamp);
   })();
 
   // Bluesky に投稿
