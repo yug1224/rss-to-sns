@@ -1,12 +1,6 @@
 import { abortable } from 'jsr:@std/async';
-import AtprotoAPI, { AtpAgent, RichText } from 'npm:@atproto/api';
+import AtprotoAPI, { AtpAgent, type BlobRef, RichText } from 'npm:@atproto/api';
 
-interface uploadRetry {
-  $type?: 'blob';
-  ref?: { $link: string };
-  mimeType?: string;
-  size?: number;
-}
 export default async ({
   agent,
   rt,
@@ -24,7 +18,7 @@ export default async ({
   mimeType?: string;
   image?: Uint8Array;
 }) => {
-  const thumb = await (async () => {
+  const thumb: BlobRef | undefined = await (async () => {
     if (!(image instanceof Uint8Array && typeof mimeType === 'string')) return;
     console.log(
       JSON.stringify(
@@ -34,7 +28,7 @@ export default async ({
       ),
     );
 
-    const uploadRetry = async (retryCount = 0): Promise<uploadRetry | undefined> => {
+    const uploadRetry = async (retryCount = 0): Promise<BlobRef | undefined> => {
       try {
         const c = new AbortController();
         // 10秒でタイムアウト
@@ -54,14 +48,7 @@ export default async ({
         clearTimeout(timer);
 
         // 投稿オブジェクトに画像を追加
-        return {
-          $type: 'blob',
-          ref: {
-            $link: uploadedImage.data.blob.ref.toString(),
-          },
-          mimeType: uploadedImage.data.blob.mimeType,
-          size: uploadedImage.data.blob.size,
-        };
+        return uploadedImage.data.blob;
       } catch (e) {
         console.error(e);
 

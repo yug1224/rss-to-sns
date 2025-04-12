@@ -23,10 +23,14 @@ export default async (agent: AtpAgent, item: Item, summary?: string) => {
     const { host, pathname } = new URL(link);
     const ellipsis = `...`;
     const key = splitter.splitGraphemes(`${host}${pathname}`).slice(0, 28).join('') + ellipsis;
-    let text = key;
+    let text = '';
 
     if (summary) {
-      text = `${text}\n\n${summary}`;
+      text = `${key}\n${summary}`;
+    } else if (title) {
+      text = `${key}\n${title}`;
+    } else {
+      text = key;
     }
 
     const rt = new RichText({ text });

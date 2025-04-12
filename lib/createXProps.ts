@@ -12,5 +12,15 @@ export default async (item: Item, summary?: string) => {
 
   // X用のテキストを作成
   console.log('Success createXProps');
-  return { xText: summary ? `${summary}\n${link}` : link };
+
+  let xText = '';
+  if (summary) {
+    xText = `${summary}\n${link}`;
+  } else if (item.title?.value) {
+    xText = `${item.title.value}\n${link}`;
+  } else {
+    xText = link;
+  }
+
+  return { xText };
 };

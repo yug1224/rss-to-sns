@@ -44,35 +44,36 @@ async function processItem(
     og = await getOgp(href);
   }
 
-  // 要約を生成
-  let summary = '';
-  if (href.startsWith('https://www.youtube.com')) {
-    summary = await createYouTubeSummary(href);
-  }
-  if (
-    ![
-      'https://anond.hatelabo.jp/',
-      'https://art19.com',
-      'https://creators.spotify.com',
-      'https://pivotmedia.co.jp',
-      'https://www.youtube.com',
-      'https://yug1224.hatenablog.jp',
-    ].some((url) => href.startsWith(url))
-  ) {
-    const pdfPath = `${timestamp}.pdf`;
-    await createPDF(href, pdfPath);
+  // // 要約を生成
+  // let summary = '';
+  // if (href.startsWith('https://www.youtube.com')) {
+  //   summary = await createYouTubeSummary(href);
+  // }
+  // if (
+  //   ![
+  //     'https://anond.hatelabo.jp/',
+  //     'https://art19.com',
+  //     'https://creators.spotify.com',
+  //     'https://pivotmedia.co.jp',
+  //     'https://www.youtube.com',
+  //     'https://yug1224.hatenablog.jp',
+  //   ].some((url) => href.startsWith(url))
+  // ) {
+  //   const pdfPath = `${timestamp}.pdf`;
+  //   await createPDF(href, pdfPath);
 
-    let fileInfo;
-    try {
-      fileInfo = await Deno.stat(pdfPath);
-    } catch {
-      console.log('file not found');
-    }
-    // PDFファイルサイズが40MB未満の場合のみ要約を作成
-    if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
-      summary = await createPDFSummary(pdfPath);
-    }
-  }
+  //   let fileInfo;
+  //   try {
+  //     fileInfo = await Deno.stat(pdfPath);
+  //   } catch {
+  //     console.log('file not found');
+  //   }
+  //   // PDFファイルサイズが40MB未満の場合のみ要約を作成
+  //   if (fileInfo && fileInfo.size < 40 * 1024 * 1024) {
+  //     summary = await createPDFSummary(pdfPath);
+  //   }
+  // }
+  const summary = '';
 
   // Bluesky および X 投稿用のデータを準備
   const tmpItem = {
